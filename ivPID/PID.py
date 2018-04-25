@@ -25,7 +25,8 @@
 # python_version  :2.7
 # ==============================================================================
 
-"""Ivmech PID Controller is simple implementation of a Proportional-Integral-Derivative (PID) Controller in the Python Programming Language.
+"""Ivmech PID Controller is simple implementation of a Proportional-Integral-Derivative (PID) Controller in
+the Python Programming Language.
 More information about PID Controller: http://en.wikipedia.org/wiki/PID_controller
 """
 import time
@@ -35,11 +36,12 @@ class PID:
     """PID Controller
     """
 
-    def __init__(self, P=0.2, I=0.0, D=0.0):
-
+    def __init__(self, P=0.2, I=0.0, D=0.0, invert=False, windup=0.0):
         self.Kp = P
         self.Ki = I
         self.Kd = D
+        self.tau_s = None  # default response is infinite
+        self.windup = windup  # value the windup goes to on a clear
 
         self.sample_time = 0.00
         self.current_time = time.time()
@@ -49,8 +51,6 @@ class PID:
 
     def clear(self):
         """Clears PID computations and coefficients"""
-        self.SetPoint = 0.0
-
         self.PTerm = 0.0
         self.ITerm = 0.0
         self.DTerm = 0.0
@@ -58,7 +58,7 @@ class PID:
 
         # Windup Guard
         self.int_error = 0.0
-        self.windup_guard = 20.0
+        self.windup_guard = self.windup
 
         self.output = 0.0
 
@@ -82,7 +82,13 @@ class PID:
 
         if (delta_time >= self.sample_time):
             self.PTerm = self.Kp * error
-            self.ITerm += error * delta_time
+            if self.tau_s is None:
+                # infinite response filter
+                self.ITerm += error * delta_time
+            else:
+                # finite response filter
+                a = 1./((self.tau_s/delta_time) + 1)
+                self.ITerm = a*error + (1-a)*self.ITerm
 
             if (self.ITerm < -self.windup_guard):
                 self.ITerm = -self.windup_guard
@@ -110,6 +116,14 @@ class PID:
     def setKd(self, derivative_gain):
         """Determines how aggressively the PID reacts to the current error with setting Derivative Gain"""
         self.Kd = derivative_gain
+
+    def setFiniteFilter(self, tau_s):
+        """Set the finite response filter time"""
+        self.tau_s = tau_s
+
+    def setInfiniteFilter(self):
+        """Set the infinite response filter"""
+        self.tau_s = None
 
     def setWindup(self, windup):
         """Integral windup, also known as integrator windup or reset windup,
