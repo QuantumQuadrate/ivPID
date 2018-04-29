@@ -80,30 +80,33 @@ class PID:
         delta_time = self.current_time - self.last_time
         delta_error = error - self.last_error
 
-        if (delta_time >= self.sample_time):
-            self.PTerm = self.Kp * error
-            if self.tau_s is None:
-                # infinite response filter
-                self.ITerm += error * delta_time
-            else:
-                # finite response filter
-                a = 1./((self.tau_s/delta_time) + 1)
-                self.ITerm = a*error + (1-a)*self.ITerm
+        if (delta_time < self.sample_time):
+            return None
 
-            if (self.ITerm < -self.windup_guard):
-                self.ITerm = -self.windup_guard
-            elif (self.ITerm > self.windup_guard):
-                self.ITerm = self.windup_guard
-
-            self.DTerm = 0.0
-            if delta_time > 0:
-                self.DTerm = delta_error / delta_time
-
-            # Remember last time and last error for next calculation
-            self.last_time = self.current_time
-            self.last_error = error
-
-            self.output = self.PTerm + (self.Ki * self.ITerm) + (self.Kd * self.DTerm)
+        self.PTerm = self.Kp * error
+        if self.tau_s is None:
+    	    # infinite response filter
+    	    self.ITerm += error * delta_time
+        else:
+    	    # finite response filter
+    	    a = 1./((self.tau_s/delta_time) + 1)
+    	    self.ITerm = a*error + (1-a)*self.ITerm
+    
+        if (self.ITerm < -self.windup_guard):
+    	    self.ITerm = -self.windup_guard
+        elif (self.ITerm > self.windup_guard):
+    	    self.ITerm = self.windup_guard
+    
+        self.DTerm = 0.0
+        if delta_time > 0:
+    	    self.DTerm = delta_error / delta_time
+    
+        # Remember last time and last error for next calculation
+        self.last_time = self.current_time
+        self.last_error = error
+    
+        self.output = self.PTerm + (self.Ki * self.ITerm) + (self.Kd * self.DTerm)
+        return self.output
 
     def setKp(self, proportional_gain):
         """Determines how aggressively the PID reacts to the current error with setting Proportional Gain"""
