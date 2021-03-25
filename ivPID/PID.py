@@ -61,6 +61,7 @@ class PID:
         self.windup_guard = self.windup
 
         self.output = 0.0
+        self.SetPoint = 0.0
 
     def update(self, feedback_value):
         """Calculates PID value for given reference feedback
